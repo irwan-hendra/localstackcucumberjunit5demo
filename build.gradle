@@ -1,0 +1,82 @@
+plugins {
+    id 'org.springframework.boot' version '2.1.5.RELEASE'
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '5.0.0'
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+group = 'com.sevnis'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+    compile.exclude module: 'spring-boot-starter-tomcat'
+    compile.exclude group: 'org.apache.tomcat'
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "Greenwich.SR1")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+dependencies {
+
+    implementation 'org.springframework.cloud:spring-cloud-function-context'
+    implementation 'org.springframework.cloud:spring-cloud-starter-function-web'
+    implementation 'org.springframework.cloud:spring-cloud-function-adapter-aws'
+
+    implementation 'com.amazonaws:aws-java-sdk-dynamodb'
+    implementation 'com.amazonaws:aws-java-sdk-core'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.0'
+    implementation 'com.amazonaws:aws-lambda-java-events:2.2.6'
+
+    implementation 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+
+    testImplementation 'io.cucumber:cucumber-spring:4.3.0'
+    testImplementation 'io.cucumber:cucumber-java8:4.3.0'
+    testImplementation 'io.cucumber:cucumber-junit:4.3.0'
+    testImplementation 'cloud.localstack:localstack-utils:0.1.15'
+    testImplementation 'com.amazonaws:aws-java-sdk-lambda'
+
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testRuntime 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources
+    into('lib') {
+        from(configurations.compileClasspath) {
+            exclude 'tomcat-embed-*'
+        }
+    }
+}
+
+build.dependsOn buildZip
+
+shadowJar {
+    relocate('com.fasterxml.jackson', 'com.amazonaws.thirdparty.jackson')
+    relocate('org.apache.http', 'com.amazonaws.thirdparty.apache.http')
+    relocate('org.apache.commons', 'com.amazonaws.thirdparty.apache.commons')
+    relocate('software.amazon.ion', 'com.amazonaws.thirdparty.ion')
+}
